@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang='ja'>
+<head>
+	<meta charset='UTF-8'>
+ 	<title>pi</title>
+	<style>
+		#external {
+			width:fit-content;
+			background-color:white;
+			margin:0 auto;
+			}
+		h1 {
+			width:fit-content;
+			margin:20px auto;
+			font-family:"Dosis", sans-serif;
+			font-weight:600;
+			}
+		#control{
+			width:fit-content;
+			margin:10px auto;
+			}
+		button {
+			background-color:white;
+			border:solid 2px black;
+			border-radius:5px;
+			}
+		input {
+			width:50px;
+			}
+	</style>
+	<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+	
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Dosis:wght@200..800&display=swap" rel="stylesheet">
+</head>
+<body>
+	<div id='external'>
+		<h1>PI calculator</h1>
+		<div id='formula'>
+			$$ L_{i+1}= 2 \frac{l_{i}  L_{i} }{l_{i} + L_{i}} $$
+			$$ l_{i+1} = \sqrt{l_{i} L_{i+1}} $$
+			$$ l_{i} \lt \pi \lt L_{i} $$
+		</div>
+		<div id='control'>
+			<label>iterate<input type='number' min='0' value='3' id='iterate'></label>
+			<button type='button' id='culculate'>culculate</button>
+			<button type='button' id='reset'>reset</button>
+		</div>
+		<table border='2' id='table'>
+			<tr>
+				<td>$$ n $$</td>
+				<td>$$ l_{n} $$</td>
+				<td>$$ L_{n} $$</td>
+			</tr>
+			<tr class='valuelist' id='value1'>
+				<td></td>
+				<td></td>
+				<td></td>
+			</tr>
+		</table>
+	</div>
+  <script>
+	let array;
+	const iterate = document.getElementById('iterate');
+	const culbutton = document.getElementById('culculate');
+	const table = document.getElementById('table');
+	const valuelist = document.getElementsByClassName('valuelist');
+	const reset = document.getElementById('reset');
+	let num;
+
+	function initialize() {
+		array = [6,3,2*Math.sqrt(3)];
+		num = 1;
+		[...valuelist].forEach((e)=>{e.remove();});
+	}
+
+	function culculate(array){
+		array[0] = 2*array[0];
+		array[2] =  2 * array[1]*array[2]/(array[1]+array[2]);
+		array[1] = Math.sqrt(array[1]*array[2]);
+		return array
+	}
+
+	function addtable(i,array){
+		const tr = document.createElement('tr');
+		tr.classList.add('valuelist');
+		tr.id=`value${i}`;
+		array.forEach((e)=>{
+			const td = document.createElement('td');
+			td.innerText = `${e}`;
+			tr.appendChild(td);
+		});
+		table.appendChild(tr);
+	}
+
+
+	culbutton.addEventListener('click',()=>{
+		//initialize();
+		for (let i = 1;i <= parseInt(iterate.value);i++) {
+			addtable(i,array);
+			array = culculate(array);	
+			num = i;
+		}})
+
+	reset.addEventListener('click',()=>{
+		initialize();
+		})
+	
+	initialize();
+   </script>
+</body>
+</html>

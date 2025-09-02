@@ -1,326 +1,439 @@
-// Arbitrary-precision decimal arithmetic using BigInt under the hood.
-// Features: add, subtract, multiply, divide (with precision & rounding), sqrt (Newton's method), comparisons, parsing, formatting.
-// No dependencies. Works in Node and browsers.
+/**
+ * 任意精度演算ライブラリ
+ *
+ * このライブラリは、JavaScriptの標準的なNumber型が持つ精度限界を超えて、
+ * 文字列として表現された数値を扱うことで、任意精度の四則演算および平方根の計算を提供します。
+ *
+ * 主な機能:
+ * - add(a, b): 加算
+ * - subtract(a, b): 減算
+ * - multiply(a, b): 乗算
+ * - divide(a, b, precision): 除算 (precisionで小数点以下の桁数を指定)
+ * - sqrt(n, precision): 平方根 (precisionで小数点以下の桁数を指定)
+ *
+ * 使い方:
+ * const result = BigNumber.add("123.45", "67.89");
+ * console.log(result); // "191.34"
+ *
+ * const sqrtResult = BigNumber.sqrt("2", 50);
+ * console.log(sqrtResult); // 2の平方根を小数点以下50桁まで計算
+ */
+const BigNumber = {
 
-/* Rounding modes */
-const Rounding = Object.freeze({
-  DOWN: 'DOWN',          // toward zero
-  UP: 'UP',              // away from zero
-  FLOOR: 'FLOOR',        // toward -Infinity
-  CEIL: 'CEIL',          // toward +Infinity
-  HALF_UP: 'HALF_UP',    // ties -> up (away from zero)
-  HALF_EVEN: 'HALF_EVEN' // ties -> to even
-});
+    /**
+     * 文字列から不要な先行ゼロや後行ゼロを削除し、正規化する内部関数
+     * @param {string} numStr - 数値文字列
+     * @returns {string} 正規化された数値文字列
+     */
+    _normalize: function (numStr) {
+        let [integerPart, fractionalPart] = numStr.split('.');
+        
+        // 先行ゼロを削除 (例: "007" -> "7", "0.5" -> ".5" -> "0.5")
+        if (integerPart) {
+            integerPart = integerPart.replace(/^0+/, '');
+            if (integerPart === '') {
+                integerPart = '0';
+            }
+        } else {
+            integerPart = '0';
+        }
 
-class BigDecimal {
-  /**
-   * Internal representation: value = unscaled / 10^scale
-   * @param {bigint} unscaled
-   * @param {number} scale >= 0 integer
-   */
-  constructor(unscaled, scale = 0) {
-    if (typeof unscaled !== 'bigint') throw new TypeError('unscaled must be BigInt');
-    if (!Number.isInteger(scale) || scale < 0) throw new TypeError('scale must be a non-negative integer');
-    this.unscaled = unscaled;
-    this.scale = scale;
-    // normalize trailing zeros in unscaled when possible to keep scale minimal
-    this.#normalize();
-  }
+        if (fractionalPart) {
+            // 後行ゼロを削除 (例: "1.2300" -> "1.23")
+            fractionalPart = fractionalPart.replace(/0+$/, '');
+            if (fractionalPart === '') {
+                return integerPart;
+            }
+            return `${integerPart}.${fractionalPart}`;
+        }
+        
+        return integerPart;
+    },
 
-  // --- Parsing & factories ---
-  /** Create from number | string | bigint | BigDecimal */
-  static from(x) {
-    if (x instanceof BigDecimal) return new BigDecimal(x.unscaled, x.scale);
-    if (typeof x === 'bigint') return new BigDecimal(x, 0);
-    if (typeof x === 'number') {
-      if (!Number.isFinite(x)) throw new RangeError('Cannot convert non-finite number');
-      // Convert via string to avoid binary float surprises
-      return BigDecimal.from(x.toString());
+    /**
+     * 2つの数値文字列の絶対値を比較する内部関数
+     * @param {string} a - 数値文字列 A
+     * @param {string} b - 数値文字列 B
+     * @returns {number} a > b なら 1, a < b なら -1, a === b なら 0
+     */
+    _compare: function(a, b) {
+        a = this._normalize(a.replace('-', ''));
+        b = this._normalize(b.replace('-', ''));
+
+        let [aInt, aFrac] = a.split('.');
+        let [bInt, bFrac] = b.split('.');
+        aFrac = aFrac || '';
+        bFrac = bFrac || '';
+
+        if (aInt.length > bInt.length) return 1;
+        if (aInt.length < bInt.length) return -1;
+        
+        if (aInt > bInt) return 1;
+        if (aInt < bInt) return -1;
+
+        // 整数部分が同じ場合は小数部分を比較
+        let len = Math.max(aFrac.length, bFrac.length);
+        aFrac = aFrac.padEnd(len, '0');
+        bFrac = bFrac.padEnd(len, '0');
+        
+        if (aFrac > bFrac) return 1;
+        if (aFrac < bFrac) return -1;
+
+        return 0;
+    },
+
+    /**
+     * 加算: a + b
+     * @param {string} a - 数値文字列
+     * @param {string} b - 数値文字列
+     * @returns {string} 計算結果
+     */
+    add: function(a, b) {
+        // 符号が異なる場合は減算に置き換える
+        if (a.startsWith('-') && !b.startsWith('-')) {
+            return this.subtract(b, a.slice(1));
+        }
+        if (!a.startsWith('-') && b.startsWith('-')) {
+            return this.subtract(a, b.slice(1));
+        }
+        
+        let sign = '';
+        if (a.startsWith('-') && b.startsWith('-')) {
+            sign = '-';
+            a = a.slice(1);
+            b = b.slice(1);
+        }
+
+        let [aInt, aFrac] = a.split('.');
+        let [bInt, bFrac] = b.split('.');
+        aFrac = aFrac || '';
+        bFrac = bFrac || '';
+
+        // 小数部分の長さを揃える
+        const fracLen = Math.max(aFrac.length, bFrac.length);
+        aFrac = aFrac.padEnd(fracLen, '0');
+        bFrac = bFrac.padEnd(fracLen, '0');
+
+        // 整数部分の長さを揃える
+        const intLen = Math.max(aInt.length, bInt.length);
+        aInt = aInt.padStart(intLen, '0');
+        bInt = bInt.padStart(intLen, '0');
+
+        const numA = aInt + aFrac;
+        const numB = bInt + bFrac;
+        let carry = 0;
+        let result = '';
+
+        for (let i = numA.length - 1; i >= 0; i--) {
+            const sum = parseInt(numA[i]) + parseInt(numB[i]) + carry;
+            result = (sum % 10) + result;
+            carry = Math.floor(sum / 10);
+        }
+        if (carry > 0) {
+            result = carry + result;
+        }
+
+        let resultInt, resultFrac;
+        if (fracLen > 0) {
+            resultInt = result.slice(0, -fracLen);
+            resultFrac = result.slice(-fracLen);
+            return sign + this._normalize(`${resultInt || '0'}.${resultFrac}`);
+        }
+        return sign + this._normalize(result);
+    },
+
+    /**
+     * 減算: a - b
+     * @param {string} a - 数値文字列
+     * @param {string} b - 数値文字列
+     * @returns {string} 計算結果
+     */
+    subtract: function(a, b) {
+        if (a.startsWith('-') && !b.startsWith('-')) {
+            return this.add(a, '-' + b);
+        }
+        if (!a.startsWith('-') && b.startsWith('-')) {
+            return this.add(a, b.slice(1));
+        }
+        if (a.startsWith('-') && b.startsWith('-')) {
+            return this.subtract(b.slice(1), a.slice(1));
+        }
+
+        const comparison = this._compare(a, b);
+        if (comparison === 0) return '0';
+
+        let sign = '';
+        if (comparison === -1) {
+            sign = '-';
+            [a, b] = [b, a]; // aがbより大きいことを保証する
+        }
+
+        let [aInt, aFrac] = a.split('.');
+        let [bInt, bFrac] = b.split('.');
+        aFrac = aFrac || '';
+        bFrac = bFrac || '';
+        
+        const fracLen = Math.max(aFrac.length, bFrac.length);
+        aFrac = aFrac.padEnd(fracLen, '0');
+        bFrac = bFrac.padEnd(fracLen, '0');
+
+        let numA = aInt + aFrac;
+        let numB = bInt.padStart(aInt.length, '0') + bFrac;
+
+        let borrow = 0;
+        let result = '';
+        for (let i = numA.length - 1; i >= 0; i--) {
+            let diff = parseInt(numA[i]) - parseInt(numB[i]) - borrow;
+            if (diff < 0) {
+                diff += 10;
+                borrow = 1;
+            } else {
+                borrow = 0;
+            }
+            result = diff + result;
+        }
+
+        let resultInt, resultFrac;
+        if (fracLen > 0) {
+            resultInt = result.slice(0, -fracLen);
+            resultFrac = result.slice(-fracLen);
+            return sign + this._normalize(`${resultInt || '0'}.${resultFrac}`);
+        }
+        return sign + this._normalize(result);
+    },
+
+    /**
+     * 乗算: a * b
+     * @param {string} a - 数値文字列
+     * @param {string} b - 数値文字列
+     * @returns {string} 計算結果
+     */
+    multiply: function(a, b) {
+        if (a === '0' || b === '0') return '0';
+
+        let sign = '';
+        if ((a.startsWith('-') && !b.startsWith('-')) || (!a.startsWith('-') && b.startsWith('-'))) {
+            sign = '-';
+        }
+        a = a.replace('-', '');
+        b = b.replace('-', '');
+
+        const aFracLen = (a.split('.')[1] || '').length;
+        const bFracLen = (b.split('.')[1] || '').length;
+        const totalFracLen = aFracLen + bFracLen;
+
+        const numA = a.replace('.', '');
+        const numB = b.replace('.', '');
+
+        if (numA.length < numB.length) {
+            [numA, numB] = [numB, numA];
+        }
+
+        let result = '0';
+        for (let i = numB.length - 1; i >= 0; i--) {
+            let carry = 0;
+            let partialProduct = '';
+            for (let j = numA.length - 1; j >= 0; j--) {
+                const product = parseInt(numA[j]) * parseInt(numB[i]) + carry;
+                partialProduct = (product % 10) + partialProduct;
+                carry = Math.floor(product / 10);
+            }
+            if (carry > 0) {
+                partialProduct = carry + partialProduct;
+            }
+            partialProduct += '0'.repeat(numB.length - 1 - i);
+            result = this.add(result, partialProduct);
+        }
+
+        if (totalFracLen > 0) {
+            const resultLen = result.length;
+            if (resultLen <= totalFracLen) {
+                result = '0'.repeat(totalFracLen - resultLen + 1) + result;
+            }
+            const decimalPos = result.length - totalFracLen;
+            result = result.slice(0, decimalPos) + '.' + result.slice(decimalPos);
+        }
+
+        return sign + this._normalize(result);
+    },
+
+    /**
+     * 除算: a / b
+     * @param {string} a - 被除数
+     * @param {string} b - 除数
+     * @param {number} [precision=50] - 小数点以下の計算精度
+     * @returns {string} 計算結果
+     */
+    divide: function(a, b, precision = 50) {
+        if (b === '0' || b === '-0') {
+            throw new Error("Division by zero.");
+        }
+        if (a === '0' || a === '-0') return '0';
+
+        let sign = '';
+        if ((a.startsWith('-') && !b.startsWith('-')) || (!a.startsWith('-') && b.startsWith('-'))) {
+            sign = '-';
+        }
+        const origA_noSign = a.replace('-', '');
+        const origB_noSign = b.replace('-', '');
+
+        // --- 小数点位置の計算ロジックを修正 ---
+
+        // 1. 除数(b)を整数にするために、小数点以下の桁数を数える
+        const bFracLen = (origB_noSign.split('.')[1] || '').length;
+        const divisor = origB_noSign.replace('.', ''); // これで除数は整数文字列になった
+
+        // 2. 被除数(a)の小数点も、除数と同じ桁数だけ右にずらす
+        let [aInt, aFrac] = origA_noSign.split('.');
+        aFrac = aFrac || '';
+
+        let shiftedA_val;
+        if (bFracLen <= aFrac.length) {
+            // aの小数部がbの小数部より長いか等しい場合
+            shiftedA_val = aInt + aFrac.slice(0, bFracLen) + '.' + aFrac.slice(bFracLen);
+        } else {
+            // aの小数部がbの小数部より短い場合
+            shiftedA_val = aInt + aFrac + '0'.repeat(bFracLen - aFrac.length);
+        }
+        
+        const dividend = shiftedA_val.replace('.', '');
+
+        // 3. 商の整数部分の桁数を計算する
+        let intPartResultLen;
+        const A_for_len_calc = dividend.replace(/^0+/, '') || '0';
+        const B_for_len_calc = divisor.replace(/^0+/, '') || '0';
+
+        if (this._compare(A_for_len_calc, B_for_len_calc) < 0) {
+            intPartResultLen = 0;
+        } else {
+            const bLen = B_for_len_calc.length;
+            const aPrefix = A_for_len_calc.substring(0, bLen);
+
+            if (this._compare(aPrefix, B_for_len_calc) < 0) {
+                intPartResultLen = A_for_len_calc.length - bLen;
+            } else {
+                intPartResultLen = A_for_len_calc.length - bLen + 1;
+            }
+        }
+        
+        // 4. 筆算の実行
+        let dividendForCalc = dividend + '0'.repeat(precision + 5);
+        let quotient = '';
+        let remainder = '';
+
+        for (let i = 0; i < dividendForCalc.length; i++) {
+            remainder += dividendForCalc[i];
+            if (remainder.length > 1) remainder = remainder.replace(/^0+/, '');
+
+            let qDigit = 0;
+            while (this._compare(remainder, divisor) >= 0) {
+                remainder = this.subtract(remainder, divisor);
+                qDigit++;
+            }
+            quotient += qDigit;
+        }
+        
+        // 5. 小数点を正しい位置に挿入する
+        quotient = quotient.replace(/^0+/, '');
+        if (quotient === '') quotient = '0';
+
+        let finalQuotient;
+        if (intPartResultLen === 0) {
+            finalQuotient = '0.' + quotient;
+        } else if (quotient.length < intPartResultLen) {
+            finalQuotient = '0.' + '0'.repeat(intPartResultLen - quotient.length) + quotient;
+        } else {
+            finalQuotient = quotient.slice(0, intPartResultLen) + '.' + quotient.slice(intPartResultLen);
+        }
+
+        // 6. 指定された精度に結果を丸める（切り捨て）
+        let [qInt, qFrac] = finalQuotient.split('.');
+        qFrac = qFrac || '';
+        if (qFrac.length > precision) {
+            qFrac = qFrac.slice(0, precision);
+            finalQuotient = `${qInt}.${qFrac}`;
+        }
+        
+        return sign + this._normalize(finalQuotient);
+    },
+
+    /**
+     * 平方根: sqrt(n)
+     * @param {string} n - 数値文字列
+     * @param {number} [precision=50] - 小数点以下の計算精度
+     * @returns {string} 計算結果
+     */
+    sqrt: function(n, precision = 50) {
+        if (n.startsWith('-')) {
+            throw new Error("Cannot calculate square root of a negative number.");
+        }
+        if (n === '0') return '0';
+
+        const internalPrecision = precision + 5;
+        
+        // 初期値を設定
+        let x = '1';
+        const nIntLen = (n.split('.')[0] || '').length;
+        if (nIntLen > 1) {
+           x += '0'.repeat(Math.floor((nIntLen - 1) / 2));
+        }
+
+        let lastX = '';
+        // ニュートン法で収束させる
+        for (let i = 0; i < 100; i++) { // 無限ループを避けるため最大反復回数を設定
+            if (x === lastX) break;
+            lastX = x;
+            
+            const n_div_x = this.divide(n, x, internalPrecision);
+            const sum = this.add(x, n_div_x);
+            x = this.divide(sum, '2', internalPrecision);
+            
+            // 精度に達したら終了
+            let [xInt, xFrac] = x.split('.');
+            xFrac = xFrac || '';
+            if (xFrac.length >= precision) {
+                 const truncatedX = `${xInt}.${xFrac.slice(0, precision)}`;
+                 const truncatedLastX = `${lastX.split('.')[0]}.${(lastX.split('.')[1] || '').slice(0, precision)}`;
+                 if (truncatedX === truncatedLastX) {
+                     break;
+                 }
+            }
+        }
+
+        // 最終的な精度に整形
+        let [xInt, xFrac] = x.split('.');
+        xFrac = xFrac || '';
+        if (xFrac.length > precision) {
+            xFrac = xFrac.slice(0, precision);
+        }
+        
+        return this._normalize(`${xInt}.${xFrac}`);
     }
-    if (typeof x === 'string') {
-      // Trim and handle sign
-      const s = x.trim();
-      if (!/^[-+]?\d*(?:\.\d*)?$/.test(s)) throw new SyntaxError('Invalid decimal string: ' + x);
-      const sign = s.startsWith('-') ? -1n : 1n;
-      const body = s.replace(/^[-+]/, '');
-      const parts = body.split('.');
-      const intPart = parts[0] || '0';
-      const fracPart = parts[1] || '';
-      const scale = fracPart.length;
-      const unscaledStr = (intPart + fracPart).replace(/^0+(?=\d)/, '') || '0';
-      return new BigDecimal(sign * BigInt(unscaledStr), scale);
-    }
-    throw new TypeError('Unsupported type for BigDecimal.from');
-  }
+};
 
-  static zero() { return new BigDecimal(0n, 0); }
-  static one() { return new BigDecimal(1n, 0); }
+/*// --- 使用例 ---
+console.log("--- 任意精度計算ライブラリの使用例 ---");
 
-  // --- Helpers ---
-  #normalize() {
-    // reduce scale by removing trailing zeros in unscaled
-    if (this.unscaled === 0n) { this.scale = 0; return; }
-    while (this.scale > 0) {
-      const q = this.unscaled / 10n;
-      const r = this.unscaled % 10n;
-      if (r !== 0n) break;
-      this.unscaled = q;
-      this.scale -= 1;
-    }
-  }
+// 加算
+const sum = BigNumber.add("12345678901234567890.12345", "98765432109876543210.98765");
+console.log("加算:", sum); // 111111111011111111101.1111
 
-  static #tenPow(n) { if (n < 0) throw new RangeError('tenPow expects n>=0'); return 10n ** BigInt(n); }
+// 減算
+const diff = BigNumber.subtract("100000000000000000000", "0.00000000000000000001");
+console.log("減算:", diff); // 99999999999999999999.99999999999999999999
 
-  static #alignScales(a, b) {
-    // return [A', B', commonScale]
-    if (a.scale === b.scale) return [a.unscaled, b.unscaled, a.scale];
-    if (a.scale > b.scale) {
-      const mul = BigDecimal.#tenPow(a.scale - b.scale);
-      return [a.unscaled, b.unscaled * mul, a.scale];
-    } else {
-      const mul = BigDecimal.#tenPow(b.scale - a.scale);
-      return [a.unscaled * mul, b.unscaled, b.scale];
-    }
-  }
+// 乗算
+const prod = BigNumber.multiply("12345.6789", "9876.54321");
+console.log("乗算:", prod); // 121932631.13535269
 
-  // --- Comparison ---
-  compareTo(other) {
-    const b = BigDecimal.from(other);
-    const [A, B] = BigDecimal.#alignScales(this, b);
-    return A === B ? 0 : (A > B ? 1 : -1);
-  }
-  eq(o) { return this.compareTo(o) === 0; }
-  lt(o) { return this.compareTo(o) < 0; }
-  lte(o) { return this.compareTo(o) <= 0; }
-  gt(o) { return this.compareTo(o) > 0; }
-  gte(o) { return this.compareTo(o) >= 0; }
+// 除算 (精度50桁)
+const quot = BigNumber.divide("1", "7", 50);
+console.log("除算 (1/7):", quot); // 0.14285714285714285714285714285714285714285714285714
 
-  // --- Basic ops ---
-  add(other) {
-    const b = BigDecimal.from(other);
-    const [A, B, s] = BigDecimal.#alignScales(this, b);
-    return new BigDecimal(A + B, s);
-  }
+// 平方根 (精度100桁)
+console.log("平方根 (√2):");
+const sqrt2 = BigNumber.sqrt("2", 100);
+console.log(sqrt2); // 1.4142135623730950488016887242096980785696718753769480731766797379907324784621070388503875343276415727
 
-  sub(other) {
-    const b = BigDecimal.from(other);
-    const [A, B, s] = BigDecimal.#alignScales(this, b);
-    return new BigDecimal(A - B, s);
-  }
 
-  mul(other) {
-    const b = BigDecimal.from(other);
-    return new BigDecimal(this.unscaled * b.unscaled, this.scale + b.scale);
-  }
-
-  /**
-   * Divide to requested scale (digits after decimal). If scale is omitted, it will try exact division; if not exact, throws.
-   * @param {BigDecimal|number|string|bigint} other
-   * @param {number} [scale] number of digits after decimal in the result
-   * @param {string} [rounding=Rounding.HALF_EVEN]
-   */
-  div(other, scale, rounding = Rounding.HALF_EVEN) {
-    const b = BigDecimal.from(other);
-    if (b.unscaled === 0n) throw new RangeError('Division by zero');
-
-    // If scale specified: perform integer division with extra scaling
-    if (scale === undefined) {
-      // exact division required
-      // Compute (this.unscaled * 10^(b.scale - this.scale)) / b.unscaled and ensure remainder==0
-      const shift = b.scale - this.scale;
-      let numerator = this.unscaled;
-      if (shift >= 0) numerator *= BigDecimal.#tenPow(shift);
-      else {
-        const pow = BigDecimal.#tenPow(-shift);
-        if (numerator % pow !== 0n) throw new RangeError('Non-terminating division; specify scale & rounding');
-        numerator /= pow;
-      }
-      const q = numerator / b.unscaled;
-      const r = numerator % b.unscaled;
-      if (r !== 0n) throw new RangeError('Non-terminating division; specify scale & rounding');
-      return new BigDecimal(q, 0);
-    }
-
-    if (!Number.isInteger(scale) || scale < 0) throw new TypeError('scale must be non-negative integer');
-
-    // We want: result = (this / b) with exactly `scale` fractional digits
-    // Compute unscaled result = floor( (this.unscaled * 10^(scale + b.scale - this.scale)) / b.unscaled ) with rounding
-    const neededPow = scale + b.scale - this.scale;
-    if (neededPow < 0) {
-      // Equivalent to dividing numerator by 10^(-neededPow) first
-      // This can only happen when this has much higher scale than b plus desired scale.
-      const divisor = BigDecimal.#tenPow(-neededPow);
-      const num = this.unscaled / divisor;
-      const remPre = this.unscaled % divisor;
-      // incorporate remainder into rounding by extending numerator
-      const q = num / b.unscaled;
-      const r = num % b.unscaled;
-      let result = q;
-      let rem = r; // remainder against b.unscaled (ignores remPre)
-      // If there was remPre, treat as if additional fractional information exists -> set a flag to force rounding away from ties toward UP-ish because effective more precision exists.
-      // Simpler: fold remPre into remainder by scaling it to match denominators (can be complex). We'll approximate by considering remPre ? treat as non-zero remainder.
-      const nonZeroRemainder = (rem !== 0n) || (remPre !== 0n);
-      if (nonZeroRemainder) {
-        result = BigDecimal.#applyRounding(result, 1n, 2n, rounding, q >= 0n);
-      }
-      return new BigDecimal(result, scale);
-    } else {
-      const factor = BigDecimal.#tenPow(neededPow);
-      const numerator = this.unscaled * factor;
-      const q = numerator / b.unscaled;
-      const r = numerator % b.unscaled;
-      const rounded = BigDecimal.#roundQuotient(q, r, b.unscaled, rounding);
-      return new BigDecimal(rounded, scale);
-    }
-  }
-
-  setScale(scale, rounding = Rounding.HALF_EVEN) {
-    if (!Number.isInteger(scale) || scale < 0) throw new TypeError('scale must be non-negative integer');
-    if (scale === this.scale) return new BigDecimal(this.unscaled, this.scale);
-    if (scale > this.scale) {
-      const factor = BigDecimal.#tenPow(scale - this.scale);
-      return new BigDecimal(this.unscaled * factor, scale);
-    } else {
-      // need to round
-      const factor = BigDecimal.#tenPow(this.scale - scale);
-      const q = this.unscaled / factor;
-      const r = this.unscaled % factor;
-      const rounded = BigDecimal.#applyRounding(q, r, factor, rounding, this.unscaled >= 0n);
-      return new BigDecimal(rounded, scale);
-    }
-  }
-
-  // --- Square root ---
-  /**
-   * Compute sqrt(this) with a given number of fractional digits (scale) and rounding mode.
-   * Uses Newton-Raphson on integers: sqrt( N / 10^s ) = sqrt( N * 10^(2k - s) ) / 10^k
-   * @param {number} scale fractional digits desired
-   * @param {string} rounding rounding mode
-   */
-  sqrt(scale = 34, rounding = Rounding.HALF_EVEN) {
-    if (this.unscaled < 0n) throw new RangeError('sqrt of negative');
-    if (!Number.isInteger(scale) || scale < 0) throw new TypeError('scale must be non-negative integer');
-    if (this.unscaled === 0n) return BigDecimal.zero();
-
-    // We want integer sqrt of X = this.unscaled * 10^(2*scale) / 10^(this.scale)
-    // i.e., compute integer sqrt of I = this.unscaled * 10^(2*scale - this.scale)
-    const exp = 2 * scale - this.scale;
-    let I, scaleAdjust;
-    if (exp >= 0) {
-      I = this.unscaled * BigDecimal.#tenPow(exp);
-      scaleAdjust = scale; // result will be I_sqrt / 10^scale
-    } else {
-      // when exp < 0, divide before sqrt (only if divisible). If not divisible, we can multiply both numerator & denominator to avoid fraction: use ceil behavior by adding zeros in numerator; simpler: shift up by multiples of 2 to ensure non-negative.
-      const Iexp = -exp;
-      // Multiply by 10^(2*ceil(Iexp/2)) to make exponent non-negative and even; adjust scale accordingly
-      const bump = (Iexp + 1) >> 1; // ceil(Iexp/2)
-      const k = 2 * bump - Iexp; // non-negative after bump
-      I = this.unscaled * BigDecimal.#tenPow(2 * bump - 0);
-      scaleAdjust = scale + bump - (k/2); // k is 0 or 1, but we kept even power so k should be 0
-      // For safety keep scaleAdjust = scale + bump
-      scaleAdjust = scale + bump;
-    }
-
-    // Integer sqrt with Newton's method
-    const sqrtI = BigDecimal.#isqrt(I);
-
-    // Now sqrt(this) ≈ sqrtI / 10^scaleAdjust, but need to round to `scale` fractional digits
-    let result = new BigDecimal(sqrtI, scaleAdjust).setScale(scale, rounding);
-
-    return result;
-  }
-
-  // integer sqrt floor
-  static #isqrt(n) {
-    if (n < 0n) throw new RangeError('isqrt of negative');
-    if (n < 2n) return n;
-    // Initial guess: 2^(bitlen/2)
-    let x0 = 1n << (BigDecimal.#bitLength(n) >> 1n);
-    let x1 = (x0 + n / x0) >> 1n;
-    while (x1 < x0) { x0 = x1; x1 = (x0 + n / x0) >> 1n; }
-    return x0; // floor sqrt
-  }
-
-  static #bitLength(n) {
-    let bits = 0n; let x = n;
-    while (x) { x >>= 1n; bits++; }
-    return bits;
-  }
-
-  // Rounding helpers
-  static #roundQuotient(q, r, d, mode) {
-    const positive = q >= 0n; // q sign equals numerator sign when d>0
-    return BigDecimal.#applyRounding(q, r, d, mode, positive);
-  }
-
-  static #applyRounding(q, r, d, mode, positiveSign) {
-    if (r === 0n) return q;
-    const absR2 = 2n * (r < 0n ? -r : r);
-    const absD = d < 0n ? -d : d;
-    const isHalf = absR2 === absD;
-    const greaterHalf = absR2 > absD;
-    const sign = positiveSign ? 1n : -1n;
-
-    switch (mode) {
-      case Rounding.DOWN: return q; // toward zero
-      case Rounding.UP: return q + (sign);
-      case Rounding.FLOOR: return positiveSign ? q : q - 1n;
-      case Rounding.CEIL: return positiveSign ? q + 1n : q;
-      case Rounding.HALF_UP:
-        return (greaterHalf || isHalf) ? q + sign : q;
-      case Rounding.HALF_EVEN: {
-        if (greaterHalf) return q + sign;
-        if (isHalf) return (q % 2n === 0n) ? q : (q + sign);
-        return q;
-      }
-      default:
-        throw new RangeError('Unknown rounding mode');
-    }
-  }
-
-  // --- Formatting ---
-  toString() {
-    if (this.unscaled === 0n) return '0';
-    const negative = this.unscaled < 0n;
-    const abs = negative ? -this.unscaled : this.unscaled;
-    const s = abs.toString();
-    if (this.scale === 0) return (negative ? '-' : '') + s;
-    const len = s.length;
-    if (len <= this.scale) {
-      const zeros = '0'.repeat(this.scale - len);
-      return (negative ? '-' : '') + '0.' + zeros + s.replace(/0+$/, '').replace(/\.$/, '') || ((negative ? '-' : '') + '0');
-    }
-    const intPart = s.slice(0, len - this.scale);
-    const fracPart = s.slice(len - this.scale);
-    // Do not trim trailing zeros here; preserve scale as represented
-    return (negative ? '-' : '') + intPart + '.' + fracPart.padEnd(this.scale, '0');
-  }
-
-  toNumber() { return Number(this.toString()); }
-
-  // Aliases
-  plus(o) { return this.add(o); }
-  minus(o) { return this.sub(o); }
-  times(o) { return this.mul(o); }
-  dividedBy(o, scale, rounding) { return this.div(o, scale, rounding); }
-}
-
-// --- Example usage ---
-// (Remove or comment out these tests for production.)
-if (typeof module !== 'undefined' && require.main === module) {
-  const a = BigDecimal.from('12345678901234567890.123456789');
-  const b = BigDecimal.from('0.000000011');
-  console.log('a + b =', a.add(b).toString());
-  console.log('a - b =', a.sub(b).toString());
-  console.log('a * b =', a.mul(b).setScale(20).toString());
-  console.log('a / b (20dp) =', a.div(b, 20, Rounding.HALF_EVEN).toString());
-  console.log('sqrt(2) ~', BigDecimal.from(2).sqrt(50).toString());
-}
-
-// Export for modules
-if (typeof module !== 'undefined') {
-  module.exports = { BigDecimal, Rounding };
-}
-
-window.BigDecimal = BigDecimal;
-window.Rounding   = Rounding;
+*/

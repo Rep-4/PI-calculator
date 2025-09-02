@@ -8,6 +8,7 @@ const reset = document.getElementById('reset');
 let num;
 
 function initialize() {
+	alert(`initialize ${BigDecimal.from(3)}`);
 	array = [6,BigDecimal.from(3),BigDecimal.from(2).mul(BigDecimal.from(3).sqrt(precision.value))];
 	num = 1;
 	[...valuelist].forEach((e)=>{e.remove();});

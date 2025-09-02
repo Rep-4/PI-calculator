@@ -222,8 +222,8 @@ const BigNumber = {
         const bFracLen = (b.split('.')[1] || '').length;
         const totalFracLen = aFracLen + bFracLen;
 
-        const numA = a.replace('.', '');
-        const numB = b.replace('.', '');
+        let numA = a.replace('.', '');
+        let numB = b.replace('.', '');
 
         if (numA.length < numB.length) {
             [numA, numB] = [numB, numA];
@@ -264,6 +264,7 @@ const BigNumber = {
      * @param {number} [precision=50] - 小数点以下の計算精度
      * @returns {string} 計算結果
      */
+
     divide: function(a, b, precision = 50) {
         if (b === '0' || b === '-0') {
             throw new Error("Division by zero.");
@@ -277,85 +278,56 @@ const BigNumber = {
         const origA_noSign = a.replace('-', '');
         const origB_noSign = b.replace('-', '');
 
-        // --- 小数点位置の計算ロジックを修正 ---
+        let bFracLen = (origB_noSign.split('.')[1] || '').length;
+        let divisor = this._normalize(origB_noSign.replace('.', ''));
 
-        // 1. 除数(b)を整数にするために、小数点以下の桁数を数える
-        const bFracLen = (origB_noSign.split('.')[1] || '').length;
-        const divisor = origB_noSign.replace('.', ''); // これで除数は整数文字列になった
-
-        // 2. 被除数(a)の小数点も、除数と同じ桁数だけ右にずらす
-        let [aInt, aFrac] = origA_noSign.split('.');
-        aFrac = aFrac || '';
-
-        let shiftedA_val;
-        if (bFracLen <= aFrac.length) {
-            // aの小数部がbの小数部より長いか等しい場合
-            shiftedA_val = aInt + aFrac.slice(0, bFracLen) + '.' + aFrac.slice(bFracLen);
+        let aFracLen = (origA_noSign.split('.')[1] || '').length;
+        let dividend = this._normalize(origA_noSign.replace('.', ''));
+        if (bFracLen <= aFracLen) {
+            divisor = divisor + '0'.repeat(aFracLen - bFracLen);
         } else {
-            // aの小数部がbの小数部より短い場合
-            shiftedA_val = aInt + aFrac + '0'.repeat(bFracLen - aFrac.length);
+            dividend = dividend + '0'.repeat(bFracLen - aFracLen);
         }
-        
-        const dividend = shiftedA_val.replace('.', '');
 
-        // 3. 商の整数部分の桁数を計算する
-        let intPartResultLen;
-        const A_for_len_calc = dividend.replace(/^0+/, '') || '0';
-        const B_for_len_calc = divisor.replace(/^0+/, '') || '0';
+        //console.log(a,b,dividend, divisor);
 
-        if (this._compare(A_for_len_calc, B_for_len_calc) < 0) {
-            intPartResultLen = 0;
-        } else {
-            const bLen = B_for_len_calc.length;
-            const aPrefix = A_for_len_calc.substring(0, bLen);
-
-            if (this._compare(aPrefix, B_for_len_calc) < 0) {
-                intPartResultLen = A_for_len_calc.length - bLen;
-            } else {
-                intPartResultLen = A_for_len_calc.length - bLen + 1;
-            }
-        }
-        
-        // 4. 筆算の実行
-        let dividendForCalc = dividend + '0'.repeat(precision + 5);
         let quotient = '';
+        let stock = [...dividend,...'0'.repeat(precision+5)].join('');
         let remainder = '';
-
-        for (let i = 0; i < dividendForCalc.length; i++) {
-            remainder += dividendForCalc[i];
-            if (remainder.length > 1) remainder = remainder.replace(/^0+/, '');
-
+        let i = 0;
+        let j = 0;
+        while (i<precision) {
             let qDigit = 0;
+            remainder += stock[j];
+            //console.log(i,quotient,remainder);
             while (this._compare(remainder, divisor) >= 0) {
                 remainder = this.subtract(remainder, divisor);
                 qDigit++;
             }
             quotient += qDigit;
+
+            if (i!=0 || qDigit!=0){
+                i++
+            }
+            j++;
+            if (j == dividend.length) {
+                quotient += '.';
+            }
         }
+        //console.log(quotient);
         
-        // 5. 小数点を正しい位置に挿入する
-        quotient = quotient.replace(/^0+/, '');
+        
+        quotient = this._normalize(quotient);
         if (quotient === '') quotient = '0';
+        if (quotient === '.') quotient = '0';
+        if (quotient.startsWith('.')) quotient = '0' + quotient;
+        if (quotient.endsWith('.')) quotient = quotient + '0';
 
-        let finalQuotient;
-        if (intPartResultLen === 0) {
-            finalQuotient = '0.' + quotient;
-        } else if (quotient.length < intPartResultLen) {
-            finalQuotient = '0.' + '0'.repeat(intPartResultLen - quotient.length) + quotient;
-        } else {
-            finalQuotient = quotient.slice(0, intPartResultLen) + '.' + quotient.slice(intPartResultLen);
-        }
-
-        // 6. 指定された精度に結果を丸める（切り捨て）
-        let [qInt, qFrac] = finalQuotient.split('.');
-        qFrac = qFrac || '';
-        if (qFrac.length > precision) {
-            qFrac = qFrac.slice(0, precision);
-            finalQuotient = `${qInt}.${qFrac}`;
-        }
-        
-        return sign + this._normalize(finalQuotient);
+        //console.log(i,quotient);
+        return sign + quotient;
     },
+
+
 
     /**
      * 平方根: sqrt(n)

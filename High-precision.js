@@ -321,3 +321,6 @@ if (typeof module !== 'undefined' && require.main === module) {
 if (typeof module !== 'undefined') {
   module.exports = { BigDecimal, Rounding };
 }
+
+window.BigDecimal = BigDecimal;
+window.Rounding   = Rounding;

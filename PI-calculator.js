@@ -16,7 +16,7 @@ function initialize() {
 function culculate(array){
 	array[0] = 2*array[0];
 	array[2] =  BigDecimal.from(2).mul( array[1].mul(array[2]).div((array[1].add(array[2])),parseInt(precision.value)) );
-	array[1] = (array[1].mul(array[2])).sqrt(precision.value);
+	array[1] = (array[1].mul(array[2])).sqrt(parseInt(precision.value));
 	return array
 }
 

@@ -9,6 +9,7 @@
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Dosis:wght@200..800&display=swap" rel="stylesheet">
+	<script src="High-precision.js"></script>
 </head>
 <body>
 	<div id='external'>
@@ -19,6 +20,7 @@
 			$$ l_{i} \lt \pi \lt L_{i} $$
 		</div>
 		<div id='control'>
+			<label>precision<input type='number' min='0' value='10' id='precision'></label>
 			<label>iterate<input type='number' min='0' value='3' id='iterate'></label>
 			<button type='button' id='culculate'>culculate</button>
 			<button type='button' id='reset'>reset</button>

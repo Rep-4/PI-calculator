@@ -1,5 +1,10 @@
+body {
+	margin:0;
+	padding:0;
+}
+
 #external {
-	width:fit-content;
+	width:100%;
 	background-color:white;
 	margin:0 auto;
 }
@@ -9,6 +14,11 @@ h1 {
 	font-size:50px;
 	font-family:"Dosis", sans-serif;
 	font-weight:600;
+}
+#formula {
+	width:fit-content;
+	margin:10px auto;
+	font-size:18px;
 }
 #control{
 	width:fit-content;
@@ -27,12 +37,34 @@ input {
 	height:20px;
 	display:block;
 }
-table {
-	display:block;
-	/*max-width:95%;*/
-	width:fit-content;
-	margin:0 auto;
+#grid-area {
+	border: solid 1px #333333;
+	display: grid;
+	grid-template-columns: auto auto 1fr 1fr;
+	max-width: 95%;
+	width: fit-content;
+	margin: 0 auto;
 }
+.cell1 {
+	border: solid 1px #333333;
+	overflow-x:auto;
+}
+.cell2 {
+	border: solid 1px #333333;
+	margin:1px;
+	width:fit-content;
+}
+.cell2 mjx-container[jax="CHTML"][display="true"] {
+	margin:0;
+	line-height: normal;
+}
+.leftpos mjx-container[jax="CHTML"][display="true"] {
+	text-align:left;
+}
+.leftpos {
+	width:auto;
+}
+
 label {
 	display:flex;
 }
@@ -45,4 +77,17 @@ label {
 }
 .right {
 	margin-right:auto;
+}
+
+@media screen and (max-width: 768px) {
+	h1 {
+		font-size:30px;
+	}
+	#formula {
+		font-size:14px;
+	}
+	#grid-area {
+		grid-template-columns: auto 0.4fr 1fr 1fr;
+	}
+
 }

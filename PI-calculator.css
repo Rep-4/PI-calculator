@@ -14,6 +14,7 @@ h1 {
 	margin:10px auto;
 }
 button {
+	display:block;
 	background-color:white;
 	padding:5px;
 	border:solid 1px #333333;
@@ -21,7 +22,10 @@ button {
 }
 input {
 	width:50px;
+	display:block;
 }
 table {
 	max-width:95%;
+	width:fit-content;
+	margin:0 auto;
 }

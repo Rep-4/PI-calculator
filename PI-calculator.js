@@ -6,12 +6,20 @@ const table = document.getElementById('table');
 const valuelist = document.getElementsByClassName('valuelist');
 const reset = document.getElementById('reset');
 let num;
+const cellI = document.getElementById('i');
+const cellN = document.getElementById('n');
+const cellln = document.getElementById('ln');
+const cellLn = document.getElementById('Ln');
 
 
 function initialize() {
 	array = null;
 	num = 1;
 	[...valuelist].forEach((e)=>{e.remove();});
+	const cells = document.getElementsByClassName('cell2');
+	[...cells].forEach((e)=>{
+		e.style.removeProperty('width');
+	});
 }
 
 function sqrt(n,scale=50) {
@@ -33,15 +41,33 @@ function culculate(array,scale=50){
 }
 
 function addtable(i,array){
-	const tr = document.createElement('tr');
-	tr.classList.add('valuelist');
-	tr.id=`value${i}`;
-	array.forEach((e)=>{
-		const td = document.createElement('td');
-		td.innerText = `${e}`;
-		tr.appendChild(td);
+	for (let j = 0;j < 3;j++) {
+		const cell = document.createElement('div');
+		cell.classList.add('valuelist','cell2');
+		cell.innerText = `${array[j]}`;
+		if (j === 0) {cellN.appendChild(cell)}
+		else if (j === 1) {cellln.appendChild(cell)}
+		else if (j === 2) {cellLn.appendChild(cell)}
+	}
+	const celli = document.createElement('div');
+	celli.classList.add('valuelist','cell2');
+	celli.innerText = `${num}`;
+	cellI.appendChild(celli);
+}
+
+function resizechild() {
+	const cells = document.getElementsByClassName('cell2');
+	['i','n','ln','Ln'].forEach((el)=>{
+		let maxwidth = 0;
+		[...cells].forEach((e)=>{
+			//if (e.offsetWidth > maxwidth) {maxwidth = e.offsetWidth;}
+			if (e.parentElement.id === `${el}`) maxwidth = Math.max(maxwidth,e.clientWidth);
+		});
+		[...cells].forEach((e)=>{
+			if (e.parentElement.id === `${el}`) e.style.width = `${maxwidth}px`;
+		});
 	});
-	table.appendChild(tr);
+	
 }
 
 
@@ -49,8 +75,9 @@ culbutton.addEventListener('click',()=>{
 	if (!array) {array = [6,"3",BigNumber.multiply("2",sqrt("3",parseInt(precision.value)))]};
 	for (let i = 1;i <= parseInt(iterate.value);i++) {
 		addtable(i,array);
+		resizechild();
 		array = culculate(array,parseInt(precision.value));	
-		num = i;
+		num++;
 }})
 
 reset.addEventListener('click',()=>{

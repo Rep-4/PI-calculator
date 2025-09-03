@@ -7,9 +7,9 @@ const valuelist = document.getElementsByClassName('valuelist');
 const reset = document.getElementById('reset');
 let num;
 
+
 function initialize() {
-	console.log(BigNumber.multiply("2",sqrt("3",parseInt(precision.value))));
-	array = [6,"3",BigNumber.multiply("2",sqrt("3",parseInt(precision.value)))];
+	array = null;
 	num = 1;
 	[...valuelist].forEach((e)=>{e.remove();});
 }
@@ -17,18 +17,18 @@ function initialize() {
 function sqrt(n,scale=50) {
 	let x = n;
 	for (let i = 0;i < scale;i++){
-		x = BigNumber.divide(BigNumber.add(x,BigNumber.divide(n,x)),"2"); //(x+n/x)/2
+		x = BigNumber.divide(BigNumber.add(x,BigNumber.divide(n,x,scale)),"2",scale); //(x+n/x)/2
 	}
 	x = x.slice(0, x.indexOf('.')+scale+1);
 	return `${x}`;
 }
 
-function culculate(array){
+function culculate(array,scale=50){
 	array[0] = 2*array[0];
 	//console.log(array,BigNumber.divide(BigNumber.multiply(array[1],array[2]),BigNumber.add(array[1],array[2])));
-	array[2] =  BigNumber.multiply("2",BigNumber.divide(BigNumber.multiply(array[1],array[2]),BigNumber.add(array[1],array[2])) );
-	array[1] = sqrt(BigNumber.multiply(array[1],array[2]),parseInt(precision.value));
-	array[2] = array[2].slice(0, array[2].indexOf('.')+parseInt(precision.value)+1);
+	array[2] =  BigNumber.multiply("2",BigNumber.divide(BigNumber.multiply(array[1],array[2]),BigNumber.add(array[1],array[2]),scale));
+	array[1] = sqrt(BigNumber.multiply(array[1],array[2]),scale);
+	array[2] = array[2].slice(0, array[2].indexOf('.')+scale+1);
 	return array
 }
 
@@ -46,9 +46,10 @@ function addtable(i,array){
 
 
 culbutton.addEventListener('click',()=>{
+	if (!array) {array = [6,"3",BigNumber.multiply("2",sqrt("3",parseInt(precision.value)))]};
 	for (let i = 1;i <= parseInt(iterate.value);i++) {
 		addtable(i,array);
-		array = culculate(array);	
+		array = culculate(array,parseInt(precision.value));	
 		num = i;
 }})
 

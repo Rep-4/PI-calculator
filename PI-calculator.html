@@ -2,6 +2,7 @@
 <html lang='ja'>
 <head>
 	<meta charset='UTF-8'>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
  	<title>pi-calculator</title>
 	<link href="PI-calculator.css" rel="stylesheet">
 	<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -22,27 +23,29 @@
 		<div id='control'>
 			<div class='flex'>
 				<div class='left'>
-					<label>precision:<input type='number' min='0' value='10' id='precision'></label>
+					<label>計算精度 : <input type='number' min='0' value='10' id='precision'></label>
 					<button type='button' id='culculate'>culculate</button>
 				</div>
 				<div class='right'>
-					<label>iterate:<input type='number' min='0' value='3' id='iterate'></label>
+					<label>計算回数 : <input type='number' min='0' value='3' id='iterate'></label>
 					<button type='button' id='reset'>reset</button>
 				</div>
 			</div>
 		</div>
-		<table border='2' id='table'>
-			<tr>
-				<td>$$ n $$</td>
-				<td>$$ l_{n} $$</td>
-				<td>$$ L_{n} $$</td>
-			</tr>
-			<tr class='valuelist' id='value1'>
-				<td></td>
-				<td></td>
-				<td></td>
-			</tr>
-		</table>
+		<div id='grid-area'>
+			<div class='cell1' id="i">
+				<div class='cell2'>$$i$$</div>
+			</div>
+			<div class='cell1 leftpos' id="n">
+				<div class='cell2'>$$n$$</div>
+			</div>
+			<div class='cell1 leftpos' id="ln">
+				<div class='cell2  leftpos'>$$l_{n}$$</div>
+			</div>
+			<div class='cell1 leftpos' id="Ln">
+				<div class='cell2 leftpos'>$$L_{n}$$</div>
+			</div>
+		</div>
 	</div>
   <script src="PI-calculator.js"></script>
 </body>

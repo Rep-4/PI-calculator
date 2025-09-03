@@ -28,7 +28,7 @@ function culculate(array){
 	//console.log(array,BigNumber.divide(BigNumber.multiply(array[1],array[2]),BigNumber.add(array[1],array[2])));
 	array[2] =  BigNumber.multiply("2",BigNumber.divide(BigNumber.multiply(array[1],array[2]),BigNumber.add(array[1],array[2])) );
 	array[1] = sqrt(BigNumber.multiply(array[1],array[2]),parseInt(precision.value));
-	array[2] = array[2].slice(0, array[2].indexOf('.')+scale+1);
+	array[2] = array[2].slice(0, array[2].indexOf('.')+parseInt(precision.value)+1);
 	return array
 }
 

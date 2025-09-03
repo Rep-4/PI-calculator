@@ -53,6 +53,7 @@ input {
 	border: solid 1px #333333;
 	margin:1px;
 	width:fit-content;
+	font-size:15px;
 }
 .cell2 mjx-container[jax="CHTML"][display="true"] {
 	margin:0;
@@ -70,7 +71,7 @@ label {
 }
 .flex {
 	display:flex;
-	width:270px;
+	width:300px;
 }
 .left {
 	margin-right:auto;

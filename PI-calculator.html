@@ -20,10 +20,16 @@
 			$$ l_{i} \lt \pi \lt L_{i} $$
 		</div>
 		<div id='control'>
-			<label>precision<input type='number' min='0' value='10' id='precision'></label>
-			<label>iterate<input type='number' min='0' value='3' id='iterate'></label>
-			<button type='button' id='culculate'>culculate</button>
-			<button type='button' id='reset'>reset</button>
+			<div class='flex'>
+				<div class='left'>
+					<label>precision:<input type='number' min='0' value='10' id='precision'></label>
+					<button type='button' id='culculate'>culculate</button>
+				</div>
+				<div class='right'>
+					<label>iterate:<input type='number' min='0' value='3' id='iterate'></label>
+					<button type='button' id='reset'>reset</button>
+				</div>
+			</div>
 		</div>
 		<table border='2' id='table'>
 			<tr>

@@ -88,11 +88,11 @@ label {
 	#formula {
 		font-size:14px;
 	}
-	#n {
+	/*#n {
 		max-width:200px;
-	}
-	/*#grid-area {
-		grid-template-columns: auto 0.4fr 1fr 1fr;
 	}*/
+	#grid-area {
+		grid-template-columns: auto 0.4fr 1fr 1fr;
+	}
 
 }

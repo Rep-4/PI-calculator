@@ -10,12 +10,21 @@ const cellI = document.getElementById('i');
 const cellN = document.getElementById('n');
 const cellln = document.getElementById('ln');
 const cellLn = document.getElementById('Ln');
+const pivalue = document.getElementById('pivalue');
+const pitext = document.getElementsByClassName('pitext');
+
+let pidata;
+fetch("1-10000.txt")
+  .then(r => r.text())
+  .then(t => pidata = t);
+
 
 
 function initialize() {
 	array = null;
 	num = 1;
 	[...valuelist].forEach((e)=>{e.remove();});
+	[...pitext].forEach(e=>{e.remove();});
 	const cells = document.getElementsByClassName('cell2');
 	[...cells].forEach((e)=>{
 		e.style.removeProperty('width');
@@ -70,6 +79,22 @@ function resizechild() {
 	
 }
 
+function displayPI(value) {
+	[...pitext].forEach(e=>{e.remove();});
+	const Int = document.createElement('p');
+	const Frac = document.createElement('p');
+	Int.classList.add('pitext');
+	Frac.classList.add('pitext');
+	let i = 0;
+	while (i<value.length && pidata[i]==value[i+2]) {
+		i++;
+	}
+	Int.textContent = value.slice(0,i+2);
+	Frac.textContent = value.slice(i+2);
+	pivalue.appendChild(Int);
+	pivalue.appendChild(Frac);
+}
+
 
 culbutton.addEventListener('click',()=>{
 	if (!array) {array = [6,"3",BigNumber.multiply("2",sqrt("3",parseInt(precision.value)))]};
@@ -78,7 +103,9 @@ culbutton.addEventListener('click',()=>{
 		resizechild();
 		array = culculate(array,parseInt(precision.value));	
 		num++;
-}})
+	}
+	displayPI(`${array[2]}`);
+})
 
 reset.addEventListener('click',()=>{
 	initialize();

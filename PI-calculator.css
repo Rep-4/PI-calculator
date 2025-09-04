@@ -85,28 +85,29 @@ label {
 	margin:0 auto 10px auto;
 	width:fit-content;
 	max-width:90%;
-	overflow-wrap:anywhere;
 }
 #pivalue {
 	margin:0;
 	width:fit-content;
 	display:flex;
+	flex-wrap:wrap;
 }
 .digitcontainer {
 	width:fit-content;
 	display:flex;
 	border:solid 1px black;
-	margin:0 2px;
+	margin:1px 2px;
 }
 .pitext {
 	display:block;
 	margin:0;
 	width:fit-content;
+	white-space:nowrap;
 }
-#Int {
+#Cdigit {
 	background-color:#7FFF00;
 }
-#Frac {
+#Idigit {
 	background-color:#FF4500;
 }
 

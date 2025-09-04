@@ -94,7 +94,7 @@ function displayPI(value) {
 		const Int = document.createElement('p');
 		Int.classList.add('pitext');
 		Int.id = 'Int';
-		if (value.length > 10){
+		if (value.length > cutpos){
 			if (cutpos > 0){
 				Int.textContent = value.slice(0,cutpos);
 			}

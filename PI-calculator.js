@@ -105,7 +105,7 @@ function displayPI(value) {
 		const Frac = document.createElement('p');
 		Frac.classList.add('pitext');
 		Frac.id = 'Frac';
-		if (value.length->10) {
+		if (value.length>10) {
 			Frac.textContent = value.slice(cutpos,10);
 			value = value.slice(cutpos);
 		} else {

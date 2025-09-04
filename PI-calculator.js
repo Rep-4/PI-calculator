@@ -86,7 +86,7 @@ function displayPI(value) {
 		i++;
 	}
 	let j = 0
-	while (value.length<=0) {
+	while (value.length>0) {
 		const cutpos = (i>=j &&j+10>i)? i-j : ((i>j)? 10 : 0);
 		
 		const digitcontainer = document.createElement('div');

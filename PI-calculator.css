@@ -90,7 +90,7 @@ label {
 	margin:0;
 	width:fit-content;
 	display:flex;
-	scroll-x:auto;
+	overflow-x:auto;
 }
 .pitext {
 	display:block;

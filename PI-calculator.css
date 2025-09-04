@@ -81,6 +81,7 @@ label {
 	margin-right:auto;
 }
 #picontainer {
+	display:block;
 	margin:0 auto 10px auto;
 	width:fit-content;
 	max-width:90%;

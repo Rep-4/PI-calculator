@@ -24,9 +24,7 @@ fetch("1-10000.txt")
 function initialize() {
 	array = null;
 	num = 1;
-	[...valuelist].forEach((e)=>{e.remove();});
-	[...pitext].forEach(e=>{e.remove();});
-	[...dcontainer].forEach(e=>{e.remove();});
+	[...valuelist,...pitext,...dcontainer].forEach((e)=>{e.remove();});
 	const cells = document.getElementsByClassName('cell2');
 	[...cells].forEach((e)=>{
 		e.style.removeProperty('width');
@@ -82,9 +80,20 @@ function resizechild() {
 }
 
 function displayPI(value) {
-	[...pitext].forEach(e=>{e.remove();});
+	[...pitext,...dcontainer].forEach(e=>{e.remove();});
+
+	const digitcontainer = document.createElement('div');
+	digitcontainer.classList.add('digitcontainer');
+	const Cdigit = document.createElement('p');
+	Cdigit.classList.add('pitext');
+	Cdigit.id = 'Cdigit';
+	Cdigit.textContent = '3.';
+	digitcontainer.appendChild(Cdigit);
+	pivalue.appendChild(digitcontainer);
+
 	let i = 0;
-	while (i<value.length && pidata[i]==value[i+2]) {
+	
+	while (i<value.length && pidata[i]==value[i]) {
 		i++;
 	}
 	let j = 0
@@ -93,35 +102,33 @@ function displayPI(value) {
 		
 		const digitcontainer = document.createElement('div');
 		digitcontainer.classList.add('digitcontainer');
-		const Int = document.createElement('p');
-		Int.classList.add('pitext');
-		Int.id = 'Int';
+		const Cdigit = document.createElement('p');
+		Cdigit.classList.add('pitext');
+		Cdigit.id = 'Cdigit';
 		if (value.length > cutpos){
 			if (cutpos > 0){
-				Int.textContent = value.slice(0,cutpos);
+				Cdigit.textContent = value.slice(0,cutpos);
 			}
 		} else {
-			Int.textContent = value;
+			Cdigit.textContent = value;
 		}
 		
+		digitcontainer.appendChild(Cdigit);
 		
-		digitcontainer.appendChild(Int);
-		
-		const Frac = document.createElement('p');
-		Frac.classList.add('pitext');
-		Frac.id = 'Frac';
+		const Idigit = document.createElement('p');
+		Idigit.classList.add('pitext');
+		Idigit.id = 'Idigit';
 		if (value.length>10) {
-			Frac.textContent = value.slice(cutpos,10);
+			Idigit.textContent = value.slice(cutpos,10);
 			value = value.slice(10);
 		} else if (value.length>cutpos){
-			Frac.textContent = value.slice(cutpos);
+			Idigit.textContent = value.slice(cutpos);
 			value = '';
 		} else {
-			Frac.textContent = value;
+			Idigit.textContent = value;
 			value = '';
 		}
-		digitcontainer.appendChild(Frac);
-		
+		digitcontainer.appendChild(Idigit);
 		
 		pivalue.appendChild(digitcontainer);
 		j += 10;
@@ -137,7 +144,7 @@ culbutton.addEventListener('click',()=>{
 		array = culculate(array,parseInt(precision.value));	
 		num++;
 	}
-	displayPI(`${array[2]}`);
+	displayPI(`${array[2].slice(2)}`);
 })
 
 reset.addEventListener('click',()=>{

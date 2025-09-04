@@ -81,20 +81,41 @@ function resizechild() {
 
 function displayPI(value) {
 	[...pitext].forEach(e=>{e.remove();});
-	const Int = document.createElement('p');
-	const Frac = document.createElement('p');
-	Int.classList.add('pitext');
-	Frac.classList.add('pitext');
-	Int.id = 'Int';
-	Frac.id = 'Frac';
 	let i = 0;
 	while (i<value.length && pidata[i]==value[i+2]) {
 		i++;
 	}
-	Int.textContent = value.slice(0,i+2);
-	Frac.textContent = value.slice(i+2);
-	pivalue.appendChild(Int);
-	pivalue.appendChild(Frac);
+	let j = 0;
+	while (j<value.length) {
+		const cutpos = (i>=j &&j+10>i)? i-j : ((i>j)? 0 : 9);
+		
+		const digitcontainer = document.createElement('div');
+		const Int = document.createElement('p');
+		Int.classList.add('pitext');
+		Int.id = 'Int';
+		if (cutpos<10){
+			Int.textContent = value.slice(0,cutpos);
+		}else {
+			Int.textContent = value;
+		}
+		
+		digitcontainer.appendChild(Int);
+		
+		const Frac = document.createElement('p');
+		Frac.classList.add('pitext');
+		Frac.id = 'Frac';
+		if (value.length->10) {
+			Frac.textContent = value.slice(cutpos,10);
+			value = value.slice(cutpos);
+		} else {
+			Frac.textContent = value;
+		}
+		digitcontainer.appendChild(Frac);
+		
+		
+		pivalue.appendChild(digitcontainer);
+		j += 10;
+	}
 }
 
 

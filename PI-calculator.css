@@ -95,12 +95,13 @@ label {
 .digitcontainer {
 	width:fit-content;
 	display:flex;
+	border:solid 1px black;
+	margin:0 2px;
 }
 .pitext {
 	display:block;
 	margin:0;
 	width:fit-content;
-	border:solid 1px black;
 }
 #Int {
 	background-color:#7FFF00;

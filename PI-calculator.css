@@ -80,6 +80,16 @@ label {
 .right {
 	margin-right:auto;
 }
+.pitext {
+	display:block;
+	margin:0;
+}
+#Int {
+	background-color:green;
+}
+#Frac {
+	background-color:red;
+}
 
 @media screen and (max-width: 768px) {
 	h1 {

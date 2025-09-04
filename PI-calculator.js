@@ -85,6 +85,8 @@ function displayPI(value) {
 	const Frac = document.createElement('p');
 	Int.classList.add('pitext');
 	Frac.classList.add('pitext');
+	Int.id = 'Int';
+	Frac.id = 'Frac';
 	let i = 0;
 	while (i<value.length && pidata[i]==value[i+2]) {
 		i++;

@@ -82,12 +82,17 @@ label {
 }
 #pivalue {
 	margin:0 auto 10px auto;
+	width:fit-content;
+	max-width:90%;
+	
 	display:flex;
 }
 .pitext {
 	display:block;
 	margin:0;
 	width:fit-content;
+	line-break:anywhere;
+	border:solid 1px black;
 }
 #Int {
 	background-color:#7FFF00;

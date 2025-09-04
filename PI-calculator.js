@@ -107,9 +107,10 @@ function displayPI(value) {
 		Frac.id = 'Frac';
 		if (value.length>10) {
 			Frac.textContent = value.slice(cutpos,10);
-			value = value.slice(cutpos);
+			value = value.slice(10);
 		} else {
 			Frac.textContent = value;
+			value = '';
 		}
 		digitcontainer.appendChild(Frac);
 		

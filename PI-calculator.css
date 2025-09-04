@@ -85,7 +85,7 @@ label {
 	margin:0 auto 10px auto;
 	width:fit-content;
 	max-width:90%;
-	overwrap:anywhere;
+	overflow-wrap:anywhere;
 }
 #pivalue {
 	margin:0;

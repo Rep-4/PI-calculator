@@ -85,12 +85,12 @@ function displayPI(value) {
 	while (i<value.length && pidata[i]==value[i+2]) {
 		i++;
 	}
-	let j = 0;
-	while (j<value.length) {
+	let j = 0
+	while (value.length<=0) {
 		const cutpos = (i>=j &&j+10>i)? i-j : ((i>j)? 10 : 0);
 		
 		const digitcontainer = document.createElement('div');
-		digitcontainer.id = 'digitcontainer';
+		digitcontainer.classList.add('digitcontainer');
 		const Int = document.createElement('p');
 		Int.classList.add('pitext');
 		Int.id = 'Int';

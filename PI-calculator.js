@@ -11,6 +11,7 @@ const cellN = document.getElementById('n');
 const cellln = document.getElementById('ln');
 const cellLn = document.getElementById('Ln');
 const pivalue = document.getElementById('pivalue');
+const dcontainer = document.getElementsByClassName('digitcontainer');
 const pitext = document.getElementsByClassName('pitext');
 
 let pidata;
@@ -25,6 +26,7 @@ function initialize() {
 	num = 1;
 	[...valuelist].forEach((e)=>{e.remove();});
 	[...pitext].forEach(e=>{e.remove();});
+	[...dcontainer].forEach(e=>{e.remove();});
 	const cells = document.getElementsByClassName('cell2');
 	[...cells].forEach((e)=>{
 		e.style.removeProperty('width');

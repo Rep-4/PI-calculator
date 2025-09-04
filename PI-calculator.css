@@ -85,12 +85,12 @@ label {
 	margin:0 auto 10px auto;
 	width:fit-content;
 	max-width:90%;
+	overflow-x:auto;
 }
 #pivalue {
 	margin:0;
 	width:fit-content;
 	display:flex;
-	overflow-x:auto;
 }
 .pitext {
 	display:block;

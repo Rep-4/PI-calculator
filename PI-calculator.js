@@ -111,6 +111,9 @@ function displayPI(value) {
 		if (value.length>10) {
 			Frac.textContent = value.slice(cutpos,10);
 			value = value.slice(10);
+		} else if (value.length>cutpos){
+			Frac.textContent = value.slice(cutpos);
+			value = '';
 		} else {
 			Frac.textContent = value;
 			value = '';

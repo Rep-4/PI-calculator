@@ -80,6 +80,9 @@ label {
 .right {
 	margin-right:auto;
 }
+#pivalue {
+	margin:0 auto;
+}
 .pitext {
 	display:block;
 	margin:0;

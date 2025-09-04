@@ -90,6 +90,7 @@ function displayPI(value) {
 		const cutpos = (i>=j &&j+10>i)? i-j : ((i>j)? 0 : 9);
 		
 		const digitcontainer = document.createElement('div');
+		digitcontainer.id = 'digitcontainer';
 		const Int = document.createElement('p');
 		Int.classList.add('pitext');
 		Int.id = 'Int';

@@ -94,6 +94,7 @@ label {
 }
 .digitcontainer {
 	width:fit-content;
+	display:flex;
 }
 .pitext {
 	display:block;

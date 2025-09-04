@@ -80,18 +80,20 @@ label {
 .right {
 	margin-right:auto;
 }
-#pivalue {
-	margin:0 auto 10px auto;
+#picontainer {
 	width:fit-content;
 	max-width:90%;
-	
+}
+#pivalue {
+	margin:0;
+	width:fit-content;
 	display:flex;
+	scroll-x:auto;
 }
 .pitext {
 	display:block;
 	margin:0;
 	width:fit-content;
-	line-break:anywhere;
 	border:solid 1px black;
 }
 #Int {
